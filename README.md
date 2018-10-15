@@ -15,25 +15,29 @@ When processing a raw file, the schema of the file is almost always needed. Havi
 
 # Header flags
 
-Each column header should include hints as to the nature of the column.
+Column headings are specified like URL query parameters.
 
-- `*` primary key
-- `=[X]` unique key
-- `!` required (not null)
-- `[tdifs]` data type t=text d=date i=integer f=float s=timestamp
-- `([!]N[,M])` fixed or maximum length/precision
-- `{text}` value that represents null
+    column_name?parameter...
 
-## date/time:
+where parameters can be (not always requiring values)
 
-- `[d]` is always UTC YYYYMMDD.
-- `[s]` is always UTC Epoch seconds (possibly with fractional seconds).
+- `pk` primary key (is requied by default)
+- `uk[=name[,order]]` optionally named unique key (required/not-null by default)
+- `[type][!][=length|precision|format]` optionally lengthed and required data type
+  - `!` after the type (before `=`) means required (not null)
+  - `text` or `t` `=length[!]` text is the default type
+    - `!` after length means fixed length
+  - `date` or `d` `=format` defaults to `Ymd`
+  - `integer` or `i` `=length`
+  - `float` or `f` `=length[,precision]`
+  - `timestamp` or `s` `=format` defaults to `YmdTHMS`
+- `null[=re]` the regular expression that represents nulls. defaults to empty string
 
 # Example
 
 Consider this space-delimited header example:
 
-    pk1(!2)* pk2[i]* unq1a[i]= unq1b[t]= unq1c2a(3)[t]==A unq2b[i]=A unq2c[i]=A colA[t](12){.} colB[f]{-}{.}{} colC[i]! colD[d]
+    a?pk&2 b?pk&i c?i&uk d?t&uk e?t=3&uk=A f?i&uk=A,1 g?i&uk=A h?12?null=. i?f&n=[-.]|^$ j?i! k?d
 
 - The primary key fields are ordered left to right so as not to require an order specifier.
 - The uniqueness flag's identifier is the trailing flag and can be any single character for grouping unique keys.
@@ -42,34 +46,34 @@ Consider this space-delimited header example:
 
 How to interpret each header hint:
 
-- `pk1(!2)*` - The first primary key field. Is text, by default, and must always be two characters.
-- `pk2[i]*` - The second primary key field. An integer.
-- `unq1a[i]=` - The first field of the "default" unique key. An integer.
-- `unq1b[t]=` - The second field of the "default" unqique key. Text.
-- `unq1c2a(3)[t]==A` - Both the third field of the "default" unique key and the first field of unique key "A". Text with three character maximum length.
-- `unq2b[i]=A` - The second field of unique key "A". An integer.
-- `unq2c[i]=A` - The third field of unique key "A". An integer.
-- `colA[t](12){.}` - A text column with a maximum of twelve characters. `.` represents that the value is null. This implies that an empty field is not null.
-- `colB[f]{-}{.}{}` - A float column where `-`, `.`, and the empty field represent null values. Note the significance of this being a floating point field possibly containing values that are not floats which would derail automated data type attempts.
-- `colC[i]!` - A required integer field.
-- `colD[d]` - A date.
+- `a?pk&2` - The first primary key field. Is text, by default, and must always be two characters.
+- `b?pk&i` - The second primary key field. An integer.
+- `c?i` - The first field of the "default" unique key. An integer.
+- `d?t` - The second field of the "default" unqique key. Text.
+- `e?t=3&uk=A` - Both the third field of the "default" unique key and the first field of unique key "A". Text with three character maximum length.
+- `f?i&uk=A` - The second field of unique key "A". An integer.
+- `g?i&uk=A` - The third field of unique key "A". An integer.
+- `h?12?null=.` - A text column with a maximum of twelve characters. `.` represents that the value is null. This implies that an empty field is not null.
+- `i?f&n=[-.]|^$` - A float column where `-`, `.`, and the empty field represent null values. Note the significance of this being a floating point field possibly containing values that are not floats which would derail automated data type attempts.
+- `j?i!` - A required integer field.
+- `k?d` - A date.
 
 The above is equivalent to (assuming a somewhat generic SQL database):
 
     create table ... (
-      pk1     char(2)      not null,
-      pk2     integer      not null,
-      unq1a   integer      not null,
-      unq1b   text         not null,
-      unq1c2a varchar(3)   not null,
-      unq2b   integer      not null,
-      unq2c   integer      not null,
-      colA    varchar(12),
-      colB    float,
-      colC    integer not null,
-      colD    date,
-      primary key (pk1, pk2)
+      a  char(2)      not null,
+      b  integer      not null,
+      c  integer      not null,
+      d  text         not null,
+      e  varchar(3)   not null,
+      f  integer      not null,
+      g  integer      not null,
+      h  varchar(12),
+      i  float,
+      j  integer not null,
+      k  date,
+      primary key (a, b)
     );
 
-    create unique index ... (unq1a,unq1c,unq1c2a);
-    create unique index ... (unq1c2a,unq2b,unq2c);
+    create unique index ... (c,d);
+    create unique index A (f,e,g);
