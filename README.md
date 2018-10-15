@@ -37,6 +37,10 @@ where parameters can be (not always requiring values)
 
 Consider this space-delimited header example:
 
+    a b c d e f g h i j k
+
+It's great to at least provide column names but it doesn't help at all in expectations for processing the data. With a little bit of context, files can be completely automated and verified:
+
     a?pk&2 b?pk&i c?i&uk d?t&uk e?t=3&uk=A f?i&uk=A,1 g?i&uk=A h?12?null=. i?f&n=[-.]|^$ j?i! k?d
 
 - The primary key fields are ordered left to right so as not to require an order specifier.
